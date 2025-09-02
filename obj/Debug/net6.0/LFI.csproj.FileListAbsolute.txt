@@ -1,0 +1,15 @@
+/home/mm/Boxes/HomeNetwork/LFI/bin/Debug/net6.0/LFI
+/home/mm/Boxes/HomeNetwork/LFI/bin/Debug/net6.0/LFI.deps.json
+/home/mm/Boxes/HomeNetwork/LFI/bin/Debug/net6.0/LFI.runtimeconfig.json
+/home/mm/Boxes/HomeNetwork/LFI/bin/Debug/net6.0/LFI.dll
+/home/mm/Boxes/HomeNetwork/LFI/bin/Debug/net6.0/LFI.pdb
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/LFI.csproj.AssemblyReference.cache
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/LFI.GeneratedMSBuildEditorConfig.editorconfig
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/LFI.AssemblyInfoInputs.cache
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/LFI.AssemblyInfo.cs
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/LFI.csproj.CoreCompileInputs.cache
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/LFI.dll
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/refint/LFI.dll
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/LFI.pdb
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/LFI.genruntimeconfig.cache
+/home/mm/Boxes/HomeNetwork/LFI/obj/Debug/net6.0/ref/LFI.dll
