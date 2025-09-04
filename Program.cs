@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more informations
+﻿
 
 namespace LFI
 {
@@ -8,33 +8,46 @@ namespace LFI
         {
             MainStartup.DisplayHeader();
 
-            if (args.Length == 0)
+            Console.CancelKeyPress += (_, e) =>
             {
-                throw new Exception("Usage: dotnet run <hostname> <Num of Threads> <Num of Traversals> <Path to wordlist>");
+                e.Cancel = true; // prevent abrupt termination while we clean up
+            };
+
+            ArgsValidationResult? validationArgs = null;
+            try
+            {
+                validationArgs = ArgsValidator.ArgumentsValidation(args);
             }
-            if (string.IsNullOrEmpty(args[0]))
+            catch (ArgumentException ex)
             {
-                throw new Exception("Please provide a hostname");
+                Console.WriteLine($"Error: {ex.Message}");
+                MainStartup.DisplayUsage();
+                MainStartup.DisplayFooter();
+                Environment.ExitCode = 1;
+                return;
             }
-            int numberOfThreads = 0;
-            if (!int.TryParse(args[1], out numberOfThreads))
+            catch (Exception ex)
             {
-                throw new Exception("Please provide the number of threads you want to execute");
-            }
-            int numberOfTraversals = 0;
-            if (string.IsNullOrEmpty(args[2]))
-            {
-                throw new Exception("Please provide a number of traversals");
-            }
-            if (string.IsNullOrEmpty(args[3]))
-            {
-                throw new Exception("Please provide a path to the wordlist");
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+                MainStartup.DisplayFooter();
+                Environment.ExitCode = 1;
+                return;
             }
 
-            string addressToAttack = args[0];
-
-
-            
+            // Scanner scaffold (no network I/O yet)
+            try
+            {
+                Scanner.LfiScanner.Run(validationArgs);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Scanner error: {ex.Message}");
+                Environment.ExitCode = 1;
+            }
+            finally
+            {
+                MainStartup.DisplayFooter();
+            }
         }
     }
 }

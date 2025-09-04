@@ -4,35 +4,48 @@ namespace LFI
 {
     public static class ArgsValidator
     {
-        public static void ArgumentsValidation(string[] args)
+        public static ArgsValidationResult ArgumentsValidation(string[] args)
         {
-            if (args.Length == 0)
+            if (args == null || args.Length < 4)
             {
-                throw new Exception("Usage: dotnet run <hostname> <Num of Threads> <Num of Traversals> <Path to wordlist>");
-            }
-            if (string.IsNullOrEmpty(args[0]))
-            {
-                throw new Exception("Please provide a hostname");
-            }
-            int numberOfThreads = 0;
-            if (!int.TryParse(args[1], out numberOfThreads))
-            {
-                throw new Exception("Please provide the number of threads you want to execute");
-            }
-            int numberOfTraversals = 0;
-            if (string.IsNullOrEmpty(args[2]))
-            {
-                throw new Exception("Please provide a number of traversals");
-            }
-            if (string.IsNullOrEmpty(args[3]))
-            {
-                throw new Exception("Please provide a path to the wordlist");
-            }
-            if (!File.Exists(args[3])) {
-                throw new Exception("Please provide a wordlist that exists");
+                throw new ArgumentException("Invalid arguments. Expecting 4 arguments.");
             }
 
-                string addressToAttack = args[0];
+            if (string.IsNullOrWhiteSpace(args[0]))
+            {
+                throw new ArgumentException("Please provide a hostname.");
+            }
+            string addressToAttack = args[0];
+
+            if (!int.TryParse(args[1], out int numberOfThreads))
+            {
+                throw new ArgumentException("Please provide a valid integer for threads.");
+            }
+            if (numberOfThreads <= 0)
+            {
+                throw new ArgumentException("Threads must be greater than 0.");
+            }
+
+            if (!int.TryParse(args[2], out int numberOfTraversals))
+            {
+                throw new ArgumentException("Please provide a valid integer for traversals.");
+            }
+            if (numberOfTraversals < 0)
+            {
+                throw new ArgumentException("Traversals cannot be negative.");
+            }
+
+            if (string.IsNullOrWhiteSpace(args[3]))
+            {
+                throw new ArgumentException("Please provide a path to the wordlist.");
+            }
+            if (!File.Exists(args[3]))
+            {
+                throw new ArgumentException("Please provide a wordlist file that exists.");
+            }
+            string wordlistPath = args[3];
+
+            return new ArgsValidationResult(addressToAttack, numberOfThreads, numberOfTraversals, wordlistPath);
         }
     }
 }
