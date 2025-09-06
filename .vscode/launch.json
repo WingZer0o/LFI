@@ -11,7 +11,7 @@
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/bin/Debug/net6.0/LFI.dll",
-            "args": ["http://94.237.50.221:31149/index.php?language=", "10", "/usr/share/SecLists/Fuzzing/LFI/LFI-Jhaddix.txt"],
+            "args": ["http://94.237.50.221:43704/index.php?language=", "10", "/usr/share/SecLists/Fuzzing/LFI/LFI-Jhaddix.txt"],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
