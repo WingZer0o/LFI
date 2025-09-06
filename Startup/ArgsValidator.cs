@@ -8,7 +8,7 @@ namespace LFI
         {
             if (args == null || args.Length < 3)
             {
-                throw new ArgumentException("Invalid arguments. Expecting 4 arguments.");
+                throw new ArgumentException("Invalid arguments. Expecting 3 arguments.");
             }
 
             if (string.IsNullOrWhiteSpace(args[0]))
