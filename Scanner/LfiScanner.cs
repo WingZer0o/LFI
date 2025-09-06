@@ -90,35 +90,31 @@ namespace LFI.Scanner
                 try
                 {
                     var resp = httpClient.GetAsync(targetUri).GetAwaiter().GetResult();
-                    if (resp.StatusCode == 200) 
+                    if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                     {
-                    int len = content?.Length ?? 0;
+                        var stringContent = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        int len = stringContent?.Length ?? 0;
 
-                    bool likelyInteresting = false;
-                    string snippet = string.Empty;
+                        bool likelyInteresting = false;
+                        string snippet = string.Empty;
 
-                    if (len > baselineLength + 50 && resp.IsSuccessStatusCode)
-                    {
-                        likelyInteresting = true;
-                    }
-
-                    // check textual signatures (safely try to decode)
-                    try
-                    {
-                        
-                        if (content.Contains("root:x:0:0") || content.Contains("uid="))
+                        // check textual signatures (safely try to decode)
+                        try
                         {
-                            likelyInteresting = true;
-                            snippet = content.Length > 500 ? content.Substring(0, 500) : content;
-                        }
-                    }
-                    catch { /* ignore decoding errors */ }
 
-                    if (likelyInteresting)
-                    {
-                        findings.Add($"{targetUri} [{(int)resp.StatusCode}] len={len} content=${content}");
-                        Console.WriteLine($"[FOUND] {targetUri} -> status={(int)resp.StatusCode} len={len}");
-                    }
+                            if (stringContent.Contains("root:x:0:0") || stringContent.Contains("uid="))
+                            {
+                                likelyInteresting = true;
+                                snippet = stringContent.Length > 500 ? stringContent.Substring(0, 500) : stringContent;
+                            }
+                        }
+                        catch { /* ignore decoding errors */ }
+
+                        if (likelyInteresting)
+                        {
+                            findings.Add($"{targetUri} [{(int)resp.StatusCode}] len={len} content=${stringContent}");
+                            Console.WriteLine($"[FOUND] {targetUri} -> status={(int)resp.StatusCode} len={len}");
+                        }
 
                     }
                     var content = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
