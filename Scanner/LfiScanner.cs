@@ -1,14 +1,21 @@
 using System.Collections.Concurrent;
+using System.Net.Http;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace LFI.Scanner
 {
     public static class LfiScanner
     {
+        
+        private static readonly Regex[] Signatures = new[]
+        {
+            new Regex(@"root:x:\d+:\d+:", RegexOptions.IgnoreCase | RegexOptions.Compiled)
+        };
         public static void Run(ArgsValidationResult args)
         {
             Console.WriteLine($"Target      : {args.AddressToAttack}");
             Console.WriteLine($"Threads     : {args.NumberOfThreads}");
-            Console.WriteLine($"Traversals  : {args.NumberOfTraversals}");
             Console.WriteLine($"Wordlist    : {args.WordlistPath}");
 
             if (!File.Exists(args.WordlistPath))
@@ -18,41 +25,132 @@ namespace LFI.Scanner
 
             // Read wordlist lazily
             var candidates = File.ReadLines(args.WordlistPath)
-                                  .Where(l => !string.IsNullOrWhiteSpace(l))
                                   .Select(l => l.Trim())
                                   .ToList();
 
             Console.WriteLine($"Candidates  : {candidates.Count}");
 
-            // Build traversal prefix like ../../.. based on count
-            string traversalPrefix = string.Concat(Enumerable.Repeat("../", args.NumberOfTraversals));
+            Console.WriteLine("\n[Live Run] Generating candidate paths and issuing HTTP requests\n");
 
-            Console.WriteLine("\n[Dry Run] Generating candidate paths (no network requests)\n");
+            // Normalize target address - ensure scheme is present
+            string baseAddress = args.AddressToAttack.Trim();
+            if (!baseAddress.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !baseAddress.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                baseAddress = "http://" + baseAddress;
+            }
+
+            // Prepare HttpClient (shared instance)
+            using var httpClient = new HttpClient()
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+
+            // Do a baseline probe with a guaranteed-nonexistent path to compare response sizes
+            string baselinePath = $"nonexistent-{Guid.NewGuid()}.txt";
+            Uri baselineUri = new Uri(new Uri(baseAddress), baselinePath);
+            int baselineLength = 0;
+            try
+            {
+                var baselineResp = httpClient.GetAsync(baselineUri).GetAwaiter().GetResult();
+                var baselineBytes = baselineResp.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+                baselineLength = baselineBytes?.Length ?? 0;
+                Console.WriteLine($"Baseline probe -> {baselineUri} [{(int)baselineResp.StatusCode}] len={baselineLength}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Baseline probe failed: {ex.Message}. Proceeding with baseline length=0");
+                baselineLength = 0;
+            }
 
             var options = new ParallelOptions { MaxDegreeOfParallelism = args.NumberOfThreads };
 
-            // Use a thread-safe counter and print a small sample to avoid flooding the console
-            int printed = 0;
-            int sampleLimit = Math.Min(25, candidates.Count);
+            // Thread-safe collection for findings
+            var findings = new ConcurrentBag<string>();
+
             long total = 0;
+            int sampleLimit = Math.Min(25, candidates.Count);
+            int printed = 0;
 
             Parallel.ForEach(candidates, options, candidate =>
             {
-                Interlocked.Increment(ref total);
-                string path = $"{traversalPrefix}{candidate.TrimStart('/') }";
+                string targetUri;
+                try
+                {
+                    Interlocked.Increment(ref total);
+                    string relative = candidate.TrimStart('/');
+                    targetUri = baseAddress + relative;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERR] Processing candidate '{candidate}' -> {ex.Message}");
+                    return; // skip to next candidate
+                }
+
                 if (Interlocked.Increment(ref printed) <= sampleLimit)
                 {
-                    Console.WriteLine($"  -> {args.AddressToAttack} | {path}");
+                    Console.WriteLine($"  -> {targetUri}");
+                }
+
+                try
+                {
+                    var resp = httpClient.GetAsync(targetUri).GetAwaiter().GetResult();
+                    var content = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    int len = content?.Length ?? 0;
+
+                    bool likelyInteresting = false;
+                    string snippet = string.Empty;
+
+                    if (len > baselineLength + 50 && resp.IsSuccessStatusCode)
+                    {
+                        likelyInteresting = true;
+                    }
+
+                    // check textual signatures (safely try to decode)
+                    try
+                    {
+                        var matches = Signatures.Where(r => r.IsMatch(content));
+                        if (matches.Any())
+                        {
+                            likelyInteresting = true;
+                            snippet = content;
+                            
+                        }
+                    }
+                    catch { /* ignore decoding errors */ }
+
+                    if (likelyInteresting)
+                    {
+                        findings.Add($"{targetUri} [{(int)resp.StatusCode}] len={len}");
+                        Console.WriteLine($"[FOUND] {targetUri} -> status={(int)resp.StatusCode} len={len}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Keep going on network errors
+                    Console.WriteLine($"[ERR] {targetUri} -> {ex.Message}");
                 }
             });
 
-            Console.WriteLine($"\nPlanned requests (dry-run): {total}");
+            Console.WriteLine($"\nPlanned requests: {total}");
             if (total > sampleLimit)
             {
                 Console.WriteLine($"Shown sample: {sampleLimit} of {total}");
             }
 
-            Console.WriteLine("\nNext step: implement HTTP requests and findings reporting.");
+            Console.WriteLine($"\nFindings: {findings.Count}");
+            foreach (var f in findings)
+            {
+                Console.WriteLine(f);
+            }
+
+            // Optionally write findings to a file
+            if (findings.Count > 0)
+            {
+                var outPath = Path.Combine(Directory.GetCurrentDirectory(), "findings.txt");
+                File.WriteAllLines(outPath, findings);
+                Console.WriteLine($"Wrote findings to: {outPath}");
+            }
         }
     }
 }

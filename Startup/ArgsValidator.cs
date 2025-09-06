@@ -6,7 +6,7 @@ namespace LFI
     {
         public static ArgsValidationResult ArgumentsValidation(string[] args)
         {
-            if (args == null || args.Length < 4)
+            if (args == null || args.Length < 3)
             {
                 throw new ArgumentException("Invalid arguments. Expecting 4 arguments.");
             }
@@ -26,26 +26,17 @@ namespace LFI
                 throw new ArgumentException("Threads must be greater than 0.");
             }
 
-            if (!int.TryParse(args[2], out int numberOfTraversals))
-            {
-                throw new ArgumentException("Please provide a valid integer for traversals.");
-            }
-            if (numberOfTraversals < 0)
-            {
-                throw new ArgumentException("Traversals cannot be negative.");
-            }
-
-            if (string.IsNullOrWhiteSpace(args[3]))
+            if (string.IsNullOrWhiteSpace(args[2]))
             {
                 throw new ArgumentException("Please provide a path to the wordlist.");
             }
-            if (!File.Exists(args[3]))
+            if (!File.Exists(args[2]))
             {
                 throw new ArgumentException("Please provide a wordlist file that exists.");
             }
-            string wordlistPath = args[3];
+            string wordlistPath = args[2];
 
-            return new ArgsValidationResult(addressToAttack, numberOfThreads, numberOfTraversals, wordlistPath);
+            return new ArgsValidationResult(addressToAttack, numberOfThreads, wordlistPath);
         }
     }
 }
