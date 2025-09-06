@@ -7,24 +7,6 @@ namespace LFI.Scanner
 {
     public static class LfiScanner
     {
-        
-        private static readonly Regex[] Signatures = new[]
-        {
-            // Linux /etc/passwd
-            new Regex(@"root:x:\d+:\d+:", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            // Linux /etc/shadow
-            new Regex(@"root:[*!x]?:[0-9]*:[0-9]*:[0-9]*:[0-9]*:[0-9]*:[0-9]*:[0-9]*", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            // Linux /etc/hosts
-            new Regex(@"127\.0\.0\.1\s+localhost", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            // Windows INI files
-            new Regex(@"\[fonts\]|\[extensions\]|\[drivers\]", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            // SSH private key
-            new Regex(@"-----BEGIN [A-Z ]+ PRIVATE KEY-----", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            // Common error messages
-            new Regex(@"No such file or directory|failed to open stream|Permission denied", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            // HTML (error pages)
-            new Regex(@"<html|<body|<title>.*error.*</title>", RegexOptions.IgnoreCase | RegexOptions.Compiled)
-        };
         public static void Run(ArgsValidationResult args)
         {
             Console.WriteLine($"Target      : {args.AddressToAttack}");
@@ -108,7 +90,8 @@ namespace LFI.Scanner
                 try
                 {
                     var resp = httpClient.GetAsync(targetUri).GetAwaiter().GetResult();
-                    var content = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    if (resp.StatusCode == 200) 
+                    {
                     int len = content?.Length ?? 0;
 
                     bool likelyInteresting = false;
@@ -134,8 +117,11 @@ namespace LFI.Scanner
                     if (likelyInteresting)
                     {
                         findings.Add($"{targetUri} [{(int)resp.StatusCode}] len={len} content=${content}");
-                        Console.WriteLine($"[FOUND] {targetUri} -> status={(int)resp.StatusCode} len={len} content=${content}");
+                        Console.WriteLine($"[FOUND] {targetUri} -> status={(int)resp.StatusCode} len={len}");
                     }
+
+                    }
+                    var content = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                 }
                 catch (Exception ex)
                 {
