@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
-using System.Net.Http;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Net;
 
 namespace LFI.Scanner
 {
@@ -90,7 +88,7 @@ namespace LFI.Scanner
                 try
                 {
                     var resp = httpClient.GetAsync(targetUri).GetAwaiter().GetResult();
-                    if (resp.StatusCode == System.Net.HttpStatusCode.OK)
+                    if (resp.StatusCode == HttpStatusCode.OK)
                     {
                         var stringContent = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                         int len = stringContent?.Length ?? 0;
